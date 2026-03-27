@@ -85,7 +85,7 @@ function TipoConfig({row,onChange}) {
   const upd=(f,v)=>onChange({...row,[f]:v});
   const updOpc=(i,v)=>{const o=[...row.opciones];o[i]=v;onChange({...row,opciones:o});};
   const box={background:"#f0f0e8",border:"1px solid #808080",padding:"8px 10px",marginTop:"4px",fontFamily:F,fontSize:"10px"};
-  const mi={fontFamily:F,fontSize:"10px",border:"1px inset #808080",padding:"2px 4px",background:"#fff"};
+  const mi={fontFamily:F,fontSize:"10px",border:"1px inset #808080",padding:"2px 4px",background:"#fff",color:"#000"};
 
   if(tipo.group==="buleano") return <div style={box}>
     <div style={{fontWeight:"bold",marginBottom:"6px",color:"#000080"}}>🔘 Buleano</div>
