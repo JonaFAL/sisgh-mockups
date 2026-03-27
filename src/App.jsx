@@ -46,7 +46,7 @@ const defaultRegistro = () => ({
 const defaultProject = () => ({
   registros:[defaultRegistro()],
   sheetUrl:"",
-  colWidths:{titulo:140,item:180,subitem:0,resultado:160}, // subitem 0 = flex
+  colWidths:{titulo:140,item:180,subitem:300,resultado:160},
 });
 
 // Styles
@@ -222,7 +222,7 @@ function RegistroEditor({registro,setRegistro}) {
 function SisghRegistroView({registro, sheetUrl, onBack, colWidths, onColWidthsChange}) {
   const [localCw, setLocalCw] = useState(colWidths || {titulo:140,item:180,subitem:0,resultado:160});
   const cw = localCw;
-  const gridCols = `${cw.titulo}px ${cw.item}px 1fr 22px 22px ${cw.resultado}px`;
+  const gridCols = `${cw.titulo}px ${cw.item}px ${cw.subitem||300}px 22px 22px ${cw.resultado}px`;
   const dragRef = useRef(null);
 
   const startResize = useCallback((colKey, e) => {
@@ -385,7 +385,7 @@ function SisghRegistroView({registro, sheetUrl, onBack, colWidths, onColWidthsCh
         <div style={{border:"2px inset #808080",background:"#fff"}}>
           {/* Grid header */}
           <div style={{display:"grid",gridTemplateColumns:gridCols,background:"#0000a8",color:"#fff",fontWeight:"bold",fontSize:"10px",userSelect:"none"}}>
-            {[{label:"Título",key:"titulo"},{label:"Item",key:"item"},{label:"SubItem",key:null},{label:"P",key:null},{label:"R",key:null},{label:"Resultado",key:"resultado"}].map((h,i)=>
+            {[{label:"Título",key:"titulo"},{label:"Item",key:"item"},{label:"SubItem",key:"subitem"},{label:"P",key:null},{label:"R",key:null},{label:"Resultado",key:"resultado"}].map((h,i)=>
               <div key={i} style={{padding:"3px 4px",borderRight:"1px solid #4040c0",textAlign:"center",whiteSpace:"nowrap",position:"relative"}}>
                 {h.label}
                 {h.key && <div onMouseDown={e=>startResize(h.key,e)}
