@@ -576,7 +576,17 @@ function SisghHCEPortal({project, onSelectRegistro, onBack}) {
 // ============================================================
 export default function App() {
   const [mode, setMode] = useState("loading");
-  const [project, setProject] = useState(defaultProject());
+  const [project, _setProject] = useState(() => {
+    try { const s = localStorage.getItem("sisgh_project"); if(s) return {...defaultProject(),...JSON.parse(s)}; } catch{}
+    return defaultProject();
+  });
+  const setProject = (v) => {
+    _setProject(prev => {
+      const next = typeof v === "function" ? v(prev) : v;
+      try { localStorage.setItem("sisgh_project", JSON.stringify(next)); } catch{}
+      return next;
+    });
+  };
   const [activeRegIdx, setActiveRegIdx] = useState(0);
   const [selectedRegIdx, setSelectedRegIdx] = useState(0);
   const [publishing, setPublishing] = useState(false);
