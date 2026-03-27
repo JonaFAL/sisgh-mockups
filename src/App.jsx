@@ -272,6 +272,7 @@ function SisghRegistroView({registro, sheetUrl, onBack, colWidths, onColWidthsCh
   const [sender, setSender] = useState("");
   const [nota, setNota] = useState("");
   const [sending, setSending] = useState(false);
+  const [modalMsg, setModalMsg] = useState("");
   const cc = Object.keys(comments).length;
 
   const openPopup = (field, e) => {
@@ -302,9 +303,9 @@ function SisghRegistroView({registro, sheetUrl, onBack, colWidths, onColWidthsCh
           action:"comment", revisor:sender, estudio:registro.estudio||"(sin estudio)",
           notaGeneral:nota, comments:Object.entries(comments).map(([campo,d])=>({campo,tipo:d.type,texto:d.text})),
         }),redirect:"follow"});
-      alert("✅ Comentarios enviados correctamente. ¡Gracias!");
+      setModalMsg("✅ Comentarios enviados correctamente. ¡Gracias!");
       setComments({}); setShowSend(false);
-    } catch { alert("❌ Error al enviar."); }
+    } catch { setModalMsg("❌ Error al enviar."); }
     setSending(false);
   };
 
@@ -340,6 +341,13 @@ function SisghRegistroView({registro, sheetUrl, onBack, colWidths, onColWidthsCh
 
   // The entire viewer is styled to look exactly like SISGH VFP
   return <div style={{fontFamily:F,fontSize:"11px",background:"#c0c0c0",minHeight:"100vh",padding:"2px"}}>
+
+    {modalMsg && <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999}}>
+      <div style={{background:"#fff",border:"2px outset #dfdfdf",padding:"24px 32px",borderRadius:"4px",textAlign:"center",maxWidth:"340px"}}>
+        <div style={{fontSize:"14px",marginBottom:"16px"}}>{modalMsg}</div>
+        <VBtn onClick={()=>setModalMsg("")}>Aceptar</VBtn>
+      </div>
+    </div>}
 
     {/* Thin review toolbar - minimal, doesn't break SISGH look */}
     <div style={{display:"flex",gap:"3px",padding:"2px 4px",background:"#c0c0c0",borderBottom:"1px solid #808080",marginBottom:"2px",alignItems:"center",flexWrap:"wrap"}}>
@@ -637,6 +645,14 @@ export default function App() {
     }
   };
 
+  const shortenUrl = async (longUrl) => {
+    try {
+      const r = await fetch(`https://is.gd/create.php?format=simple&url=${encodeURIComponent(longUrl)}`);
+      if (r.ok) { const s = await r.text(); if (s.startsWith("http")) return s.trim(); }
+    } catch {}
+    return longUrl;
+  };
+
   const publishProject = async () => {
     if (!project.sheetUrl) {alert("⚠️ Pegá la URL del Google Sheet primero."); return;}
     if (!project.registros.length) {alert("⚠️ Armá al menos un registro."); return;}
@@ -658,17 +674,12 @@ export default function App() {
       const text = await resp.text();
       let result;
       try { result = JSON.parse(text); } catch { result = null; }
-      if (result && result.status === "ok") {
-        const baseUrl = window.location.origin + window.location.pathname;
-        setPublishedUrl(`${baseUrl}?ver=${projectId}&sheet=${encodeURIComponent(project.sheetUrl)}`);
-      } else {
-        // Fallback: assume it worked (some Apps Script configs return opaque)
-        const baseUrl = window.location.origin + window.location.pathname;
-        setPublishedUrl(`${baseUrl}?ver=${projectId}&sheet=${encodeURIComponent(project.sheetUrl)}`);
-        console.warn("Publish response:", text);
-      }
+      const baseUrl = window.location.origin + window.location.pathname;
+      const longUrl = `${baseUrl}?ver=${projectId}&sheet=${encodeURIComponent(project.sheetUrl)}`;
+      const shortUrl = await shortenUrl(longUrl);
+      setPublishedUrl(shortUrl);
+      if (!result || result.status !== "ok") console.warn("Publish response:", text);
     } catch (err) {
-      // If CORS blocks reading response, try no-cors as fallback
       try {
         await fetch(project.sheetUrl, {
           method:"POST",
@@ -680,7 +691,9 @@ export default function App() {
           mode:"no-cors",
         });
         const baseUrl = window.location.origin + window.location.pathname;
-        setPublishedUrl(`${baseUrl}?ver=${projectId}&sheet=${encodeURIComponent(project.sheetUrl)}`);
+        const longUrl = `${baseUrl}?ver=${projectId}&sheet=${encodeURIComponent(project.sheetUrl)}`;
+        const shortUrl = await shortenUrl(longUrl);
+        setPublishedUrl(shortUrl);
       } catch { alert("❌ Error al publicar."); }
     }
     setPublishing(false);
