@@ -179,7 +179,12 @@ function RegistroEditor({registro,setRegistro}) {
   const dupRow=i=>{const r=[...registro.rows];r.splice(i+1,0,{...r[i],id:"r"+Date.now()+Math.floor(Math.random()*99999)});setRegistro({...registro,rows:r});setExpRow(i+1);};
 
   return <div>
-    <div style={{display:"grid",gridTemplateColumns:"auto 1fr auto 1fr",gap:"4px 8px",alignItems:"center",marginBottom:"6px"}}>
+    <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"6px"}}>
+      <label style={{display:"flex",alignItems:"center",gap:"4px",cursor:"pointer",fontSize:"11px",fontWeight:"bold",color:registro.activo===false?"#999":"#060"}}>
+        <input type="checkbox" checked={registro.activo!==false} onChange={e=>upd("activo",e.target.checked)}/> {registro.activo===false?"Inactivo (no visible para el usuario)":"Activo"}
+      </label>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"auto 1fr auto 1fr",gap:"4px 8px",alignItems:"center",marginBottom:"6px",opacity:registro.activo===false?0.5:1}}>
       <b>Estudio</b><VInp value={registro.estudio} onChange={e=>upd("estudio",e.target.value)} placeholder="AISLAMIENTO - RESPIRATORIO AÉREO" style={{width:"100%"}}/>
       <b>Categoría</b><VSel value={registro.categoria} onChange={e=>upd("categoria",e.target.value)} options={CATEGORIAS}/>
     </div>
@@ -226,6 +231,14 @@ function RegistroEditor({registro,setRegistro}) {
 // USER VIEWER — Pixel-perfect SISGH/VFP aesthetic
 // No editor UI, no modern buttons, pure VFP look
 // ============================================================
+
+function BooleanCheckbox({label}) {
+  const [checked, setChecked] = useState(false);
+  return <div style={{display:"flex",alignItems:"center",gap:"4px",width:"100%",height:"100%"}}>
+    <input type="checkbox" checked={checked} onChange={e=>setChecked(e.target.checked)} style={{width:"14px",height:"14px",cursor:"pointer",flexShrink:0}}/>
+    {checked && label ? <span style={{fontSize:"10px",fontFamily:F}}>{label}</span> : null}
+  </div>;
+}
 
 function SisghRegistroView({registro, sheetUrl, onBack, colWidths, onColWidthsChange}) {
   const [localCw, setLocalCw] = useState(colWidths || {titulo:140,item:180,subitem:0,resultado:160});
@@ -298,10 +311,7 @@ function SisghRegistroView({registro, sheetUrl, onBack, colWidths, onColWidthsCh
   const renderResultado = (row) => {
     const tipo = TIPOS_DATO.find(t=>t.code===row.tipoDato);
     if (!tipo) return null;
-    if (tipo.group==="buleano") return <div style={{display:"flex",gap:"4px",alignItems:"center",fontSize:"10px",fontFamily:F}}>
-      <label style={{display:"flex",alignItems:"center",gap:"2px",cursor:"pointer"}}><input type="radio" name={`bool_${row.id}`}/>{row.positivo||"Normal"}</label>
-      <label style={{display:"flex",alignItems:"center",gap:"2px",cursor:"pointer"}}><input type="radio" name={`bool_${row.id}`}/>{row.negativo||"Patológico"}</label>
-    </div>;
+    if (tipo.group==="buleano") return <BooleanCheckbox label={row.positivo||""} />;
     if (tipo.group==="combo") {
       const opts=(row.opciones||[]).filter(o=>o&&o.trim());
       return opts.length ? <select style={{fontFamily:F,fontSize:"10px",border:"1px inset #808080",width:"100%",background:"#fff"}}><option>Seleccionar...</option>{opts.map((o,i)=><option key={i}>{o}</option>)}</select>
