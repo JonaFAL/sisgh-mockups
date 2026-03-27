@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
+// === CONFIG ===
+const DEFAULT_SHEET = "https://script.google.com/macros/s/AKfycbyOjyjLyE0jmQcLcI3LlCbqh-p2XCW4T9UpHpKsQBr8S57v1FAxEFzzCjrWfFWtobor/exec";
+const BASE_URL = "https://sisgh-mockups.vercel.app";
+
 // === DATA ===
 const TIPOS_DATO = [
   {code:"A",label:"Buleano (Normal/Patológico)",group:"buleano"},
@@ -604,8 +608,8 @@ export default function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const verId = params.get("ver");
-    const sheetParam = params.get("sheet");
-    if (verId && sheetParam) {
+    const sheetParam = params.get("sheet") || DEFAULT_SHEET;
+    if (verId) {
       loadProject(sheetParam, verId);
     } else {
       setMode("editor");
@@ -645,14 +649,6 @@ export default function App() {
     }
   };
 
-  const shortenUrl = async (longUrl) => {
-    try {
-      const r = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
-      if (r.ok) { const s = await r.text(); if (s.startsWith("http")) return s.trim(); }
-    } catch {}
-    return longUrl;
-  };
-
   const publishProject = async () => {
     if (!project.sheetUrl) {alert("⚠️ Pegá la URL del Google Sheet primero."); return;}
     if (!project.registros.length) {alert("⚠️ Armá al menos un registro."); return;}
@@ -674,10 +670,7 @@ export default function App() {
       const text = await resp.text();
       let result;
       try { result = JSON.parse(text); } catch { result = null; }
-      const baseUrl = window.location.origin + window.location.pathname;
-      const longUrl = `${baseUrl}?ver=${projectId}&sheet=${encodeURIComponent(project.sheetUrl)}`;
-      const shortUrl = await shortenUrl(longUrl);
-      setPublishedUrl(shortUrl);
+      setPublishedUrl(`${BASE_URL}/?ver=${projectId}`);
       if (!result || result.status !== "ok") console.warn("Publish response:", text);
     } catch (err) {
       try {
@@ -690,10 +683,7 @@ export default function App() {
           }),
           mode:"no-cors",
         });
-        const baseUrl = window.location.origin + window.location.pathname;
-        const longUrl = `${baseUrl}?ver=${projectId}&sheet=${encodeURIComponent(project.sheetUrl)}`;
-        const shortUrl = await shortenUrl(longUrl);
-        setPublishedUrl(shortUrl);
+        setPublishedUrl(`${BASE_URL}/?ver=${projectId}`);
       } catch { alert("❌ Error al publicar."); }
     }
     setPublishing(false);
