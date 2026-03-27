@@ -630,12 +630,6 @@ export default function App() {
         return;
       }
       if (data.status === "ok" && data.project) {
-        // Validate version - if URL has &v= param, check it matches
-        const urlV = new URLSearchParams(window.location.search).get("v");
-        if (urlV && data.project.publishedVersion && String(data.project.publishedVersion) !== urlV) {
-          setMode("expired");
-          return;
-        }
         const loaded = {...defaultProject(), ...data.project, sheetUrl};
         setProject(loaded);
         const activos = (loaded.registros||[]).filter(r=>r.activo!==false);
@@ -664,12 +658,10 @@ export default function App() {
     const projectId = project.projectId || ("p" + Date.now());
     setProject(p=>({...p, projectId}));
     try {
-      const version = Date.now();
-      const projectWithVer = {...project, projectId, publishedVersion: version};
       const payload = JSON.stringify({
         action:"save_project", projectId,
         paciente: project.registros.map(r=>r.estudio).join(", "),
-        project: projectWithVer,
+        project: {...project, projectId},
       });
       // Apps Script POST: use text/plain to avoid CORS preflight
       const resp = await fetch(project.sheetUrl, {
@@ -681,7 +673,7 @@ export default function App() {
       const text = await resp.text();
       let result;
       try { result = JSON.parse(text); } catch { result = null; }
-      setPublishedUrl(`${BASE_URL}/?ver=${projectId}&v=${version}`);
+      setPublishedUrl(`${BASE_URL}/?ver=${projectId}`);
       if (!result || result.status !== "ok") console.warn("Publish response:", text);
     } catch (err) {
       try {
@@ -690,11 +682,11 @@ export default function App() {
           body: JSON.stringify({
             action:"save_project", projectId,
             paciente: project.registros.map(r=>r.estudio).join(", "),
-            project: projectWithVer,
+            project: {...project, projectId},
           }),
           mode:"no-cors",
         });
-        setPublishedUrl(`${BASE_URL}/?ver=${projectId}&v=${version}`);
+        setPublishedUrl(`${BASE_URL}/?ver=${projectId}`);
       } catch { alert("❌ Error al publicar."); }
     }
     setPublishing(false);
