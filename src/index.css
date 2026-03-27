@@ -1,3 +1,6 @@
+:root {
+  color-scheme: light only;
+}
 * {
   box-sizing: border-box;
 }
@@ -5,10 +8,16 @@ body {
   margin: 0;
   padding: 0;
   background: #c0c0c0;
+  color: #000;
 }
 #root {
   min-height: 100vh;
+  color: #000;
 }
 input, select, textarea, button {
-  color: #000;
+  color: #000 !important;
+  color-scheme: light;
+}
+input::placeholder {
+  color: #999 !important;
 }

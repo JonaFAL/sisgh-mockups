@@ -389,7 +389,10 @@ function SisghRegistroView({registro, sheetUrl, onBack, colWidths, onColWidthsCh
               <div key={i} style={{padding:"3px 4px",borderRight:"1px solid #4040c0",textAlign:"center",whiteSpace:"nowrap",position:"relative"}}>
                 {h.label}
                 {h.key && <div onMouseDown={e=>startResize(h.key,e)}
-                  style={{position:"absolute",top:0,right:"-2px",width:"5px",height:"100%",cursor:"col-resize",zIndex:1}}/>}
+                  onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,0.4)";}}
+                  onMouseLeave={e=>{e.currentTarget.style.background="transparent";}}
+                  style={{position:"absolute",top:0,right:"-3px",width:"7px",height:"100%",cursor:"col-resize",zIndex:2,borderRight:"2px solid transparent"}}
+                  title="Arrastrá para cambiar el ancho"/>}
               </div>)}
           </div>
 
