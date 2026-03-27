@@ -252,10 +252,12 @@ function SisghRegistroView({registro, sheetUrl, onBack}) {
     if (!sender.trim()) {alert("Por favor ingrese su nombre."); return;}
     setSending(true);
     try {
-      await fetch(sheetUrl,{method:"POST",body:JSON.stringify({
-        action:"comment", revisor:sender, estudio:registro.estudio||"(sin estudio)",
-        notaGeneral:nota, comments:Object.entries(comments).map(([campo,d])=>({campo,tipo:d.type,texto:d.text})),
-      }),mode:"no-cors"});
+      await fetch(sheetUrl,{method:"POST",
+        headers:{"Content-Type":"text/plain;charset=utf-8"},
+        body:JSON.stringify({
+          action:"comment", revisor:sender, estudio:registro.estudio||"(sin estudio)",
+          notaGeneral:nota, comments:Object.entries(comments).map(([campo,d])=>({campo,tipo:d.type,texto:d.text})),
+        }),redirect:"follow"});
       alert("✅ Comentarios enviados correctamente. ¡Gracias!");
       setComments({}); setShowSend(false);
     } catch { alert("❌ Error al enviar."); }
@@ -543,8 +545,16 @@ export default function App() {
 
   const loadProject = async (sheetUrl, projectId) => {
     try {
-      const resp = await fetch(`${sheetUrl}?id=${projectId}`);
-      const data = await resp.json();
+      const url = `${sheetUrl}${sheetUrl.includes("?")?"&":"?"}id=${projectId}`;
+      const resp = await fetch(url, {redirect:"follow"});
+      const text = await resp.text();
+      let data;
+      try { data = JSON.parse(text); } catch {
+        console.error("Invalid JSON response:", text);
+        alert("Error: respuesta inválida del servidor.");
+        setMode("error");
+        return;
+      }
       if (data.status === "ok" && data.project) {
         setProject({...defaultProject(), ...data.project, sheetUrl});
         if (data.project.registros && data.project.registros.length === 1) {
@@ -554,11 +564,12 @@ export default function App() {
           setMode("viewer_hce");
         }
       } else {
-        alert("No se pudo cargar. Verifique el link.");
+        alert(data.message || "No se pudo cargar. Verifique el link.");
         setMode("error");
       }
-    } catch {
-      alert("Error de conexión.");
+    } catch (err) {
+      console.error("Load error:", err);
+      alert("Error de conexión. Verifique que la URL del Sheet sea correcta.");
       setMode("error");
     }
   };
@@ -569,14 +580,46 @@ export default function App() {
     setPublishing(true);
     const projectId = "p" + Date.now();
     try {
-      await fetch(project.sheetUrl, {method:"POST", body:JSON.stringify({
+      const payload = JSON.stringify({
         action:"save_project", projectId,
         paciente: project.registros.map(r=>r.estudio).join(", "),
         project,
-      }), mode:"no-cors"});
-      const baseUrl = window.location.origin + window.location.pathname;
-      setPublishedUrl(`${baseUrl}?ver=${projectId}&sheet=${encodeURIComponent(project.sheetUrl)}`);
-    } catch { alert("❌ Error al publicar."); }
+      });
+      // Apps Script POST: use text/plain to avoid CORS preflight
+      const resp = await fetch(project.sheetUrl, {
+        method:"POST",
+        headers:{"Content-Type":"text/plain;charset=utf-8"},
+        body: payload,
+        redirect:"follow",
+      });
+      const text = await resp.text();
+      let result;
+      try { result = JSON.parse(text); } catch { result = null; }
+      if (result && result.status === "ok") {
+        const baseUrl = window.location.origin + window.location.pathname;
+        setPublishedUrl(`${baseUrl}?ver=${projectId}&sheet=${encodeURIComponent(project.sheetUrl)}`);
+      } else {
+        // Fallback: assume it worked (some Apps Script configs return opaque)
+        const baseUrl = window.location.origin + window.location.pathname;
+        setPublishedUrl(`${baseUrl}?ver=${projectId}&sheet=${encodeURIComponent(project.sheetUrl)}`);
+        console.warn("Publish response:", text);
+      }
+    } catch (err) {
+      // If CORS blocks reading response, try no-cors as fallback
+      try {
+        await fetch(project.sheetUrl, {
+          method:"POST",
+          body: JSON.stringify({
+            action:"save_project", projectId,
+            paciente: project.registros.map(r=>r.estudio).join(", "),
+            project,
+          }),
+          mode:"no-cors",
+        });
+        const baseUrl = window.location.origin + window.location.pathname;
+        setPublishedUrl(`${baseUrl}?ver=${projectId}&sheet=${encodeURIComponent(project.sheetUrl)}`);
+      } catch { alert("❌ Error al publicar."); }
+    }
     setPublishing(false);
   };
 
