@@ -428,7 +428,7 @@ function SisghRegistroView({registro, sheetUrl, onBack, colWidths, onColWidthsCh
           </div>
 
           {/* Grid rows */}
-          <div style={{minHeight:"200px"}}>
+          <div>
             {registro.rows.map((row,idx) => {
               const fp = `${row.titulo||"Fila "+(idx+1)}`;
               return <div key={row.id} style={{display:"grid",gridTemplateColumns:gridCols,borderBottom:"1px solid #c0c0c0",minHeight:"24px"}}>
