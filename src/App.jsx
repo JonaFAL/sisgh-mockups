@@ -647,7 +647,7 @@ export default function App() {
 
   const shortenUrl = async (longUrl) => {
     try {
-      const r = await fetch(`https://is.gd/create.php?format=simple&url=${encodeURIComponent(longUrl)}`);
+      const r = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
       if (r.ok) { const s = await r.text(); if (s.startsWith("http")) return s.trim(); }
     } catch {}
     return longUrl;
