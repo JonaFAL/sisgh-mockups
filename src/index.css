@@ -13,6 +13,8 @@ body {
 #root {
   min-height: 100vh;
   color: #000;
+  max-width: 1140px;
+  margin: 0 auto;
 }
 input, select, textarea, button {
   color: #000 !important;
