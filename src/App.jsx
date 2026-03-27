@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 // === DATA ===
 const TIPOS_DATO = [
@@ -219,9 +219,29 @@ function RegistroEditor({registro,setRegistro}) {
 // No editor UI, no modern buttons, pure VFP look
 // ============================================================
 
-function SisghRegistroView({registro, sheetUrl, onBack, colWidths}) {
-  const cw = colWidths || {titulo:140,item:180,subitem:0,resultado:160};
+function SisghRegistroView({registro, sheetUrl, onBack, colWidths, onColWidthsChange}) {
+  const [localCw, setLocalCw] = useState(colWidths || {titulo:140,item:180,subitem:0,resultado:160});
+  const cw = localCw;
   const gridCols = `${cw.titulo}px ${cw.item}px 1fr 22px 22px ${cw.resultado}px`;
+  const dragRef = useRef(null);
+
+  const startResize = useCallback((colKey, e) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = cw[colKey] || 140;
+    const onMove = (ev) => {
+      const diff = ev.clientX - startX;
+      const newW = Math.max(60, startW + diff);
+      setLocalCw(prev => {
+        const next = {...prev, [colKey]: newW};
+        if (onColWidthsChange) onColWidthsChange(next);
+        return next;
+      });
+    };
+    const onUp = () => { document.removeEventListener("mousemove", onMove); document.removeEventListener("mouseup", onUp); };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }, [cw, onColWidthsChange]);
   const [commentMode, setCommentMode] = useState(false);
   const [comments, setComments] = useState({});
   const [popup, setPopup] = useState(null);
@@ -364,8 +384,13 @@ function SisghRegistroView({registro, sheetUrl, onBack, colWidths}) {
         {/* === DATA GRID === */}
         <div style={{border:"2px inset #808080",background:"#fff"}}>
           {/* Grid header */}
-          <div style={{display:"grid",gridTemplateColumns:gridCols,background:"#0000a8",color:"#fff",fontWeight:"bold",fontSize:"10px"}}>
-            {["Título","Item","SubItem","P","R","Resultado"].map(h=><div key={h} style={{padding:"3px 4px",borderRight:"1px solid #4040c0",textAlign:"center",whiteSpace:"nowrap"}}>{h}</div>)}
+          <div style={{display:"grid",gridTemplateColumns:gridCols,background:"#0000a8",color:"#fff",fontWeight:"bold",fontSize:"10px",userSelect:"none"}}>
+            {[{label:"Título",key:"titulo"},{label:"Item",key:"item"},{label:"SubItem",key:null},{label:"P",key:null},{label:"R",key:null},{label:"Resultado",key:"resultado"}].map((h,i)=>
+              <div key={i} style={{padding:"3px 4px",borderRight:"1px solid #4040c0",textAlign:"center",whiteSpace:"nowrap",position:"relative"}}>
+                {h.label}
+                {h.key && <div onMouseDown={e=>startResize(h.key,e)}
+                  style={{position:"absolute",top:0,right:"-2px",width:"5px",height:"100%",cursor:"col-resize",zIndex:1}}/>}
+              </div>)}
           </div>
 
           {/* Grid rows */}
@@ -656,7 +681,8 @@ export default function App() {
   // === EDITOR PREVIEW ===
   if (mode === "preview_hce") return <SisghHCEPortal project={project} onSelectRegistro={idx=>{setSelectedRegIdx(idx);setMode("preview_registro");}}/>;
   if (mode === "preview_registro") return <SisghRegistroView registro={project.registros[selectedRegIdx]} sheetUrl={project.sheetUrl}
-    colWidths={project.colWidths} onBack={()=>setMode(project.registros.length>1?"preview_hce":"editor")}/>;
+    colWidths={project.colWidths} onColWidthsChange={cw=>setProject(p=>({...p,colWidths:cw}))}
+    onBack={()=>setMode(project.registros.length>1?"preview_hce":"editor")}/>;
 
   // === EDITOR ===
   return <div style={{fontFamily:F,fontSize:"11px",background:"#c0c0c0",minHeight:"100vh",padding:"6px"}}>
@@ -686,23 +712,6 @@ export default function App() {
       <div style={{padding:"6px 8px",display:"flex",gap:"8px",alignItems:"center"}}>
         <VInp value={project.sheetUrl} onChange={e=>setProject(p=>({...p,sheetUrl:e.target.value}))} placeholder="https://script.google.com/macros/s/XXXX/exec" style={{flex:1}}/>
       </div>
-    </div>
-
-    <div style={{border:"2px outset #dfdfdf",background:"#c0c0c0",marginBottom:"6px"}}>
-      <div style={{background:"#444",color:"#fff",fontWeight:"bold",padding:"3px 6px",fontSize:"10px",cursor:"pointer",display:"flex",justifyContent:"space-between"}}
-        onClick={()=>setShowColConfig(!showColConfig)}>
-        <span>📐 Anchos de Columna (Preview/Usuario)</span><span style={{fontSize:"9px"}}>{showColConfig?"▼":"▶"}</span>
-      </div>
-      {showColConfig&&<div style={{padding:"6px 8px",display:"flex",gap:"12px",alignItems:"center",flexWrap:"wrap",fontSize:"10px",fontFamily:F}}>
-        {[["titulo","Título"],["item","Item"],["resultado","Resultado"]].map(([k,label])=>
-          <div key={k} style={{display:"flex",alignItems:"center",gap:"4px"}}>
-            <b>{label}:</b>
-            <input type="number" value={project.colWidths?.[k]||0} onChange={e=>setProject(p=>({...p,colWidths:{...p.colWidths,[k]:parseInt(e.target.value)||0}}))}
-              style={{width:"55px",fontFamily:F,fontSize:"10px",border:"2px inset #808080",padding:"1px 3px",textAlign:"right"}} min="60" max="500"/>
-            <span style={{color:"#666"}}>px</span>
-          </div>)}
-        <span style={{fontSize:"9px",color:"#666"}}>(SubItem se ajusta automáticamente)</span>
-      </div>}
     </div>
 
     <div style={{border:"2px outset #dfdfdf",background:"#c0c0c0"}}>
