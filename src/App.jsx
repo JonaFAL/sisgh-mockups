@@ -46,6 +46,7 @@ const defaultRegistro = () => ({
 const defaultProject = () => ({
   registros:[defaultRegistro()],
   sheetUrl:"",
+  colWidths:{titulo:140,item:180,subitem:0,resultado:160}, // subitem 0 = flex
 });
 
 // Styles
@@ -193,9 +194,9 @@ function RegistroEditor({registro,setRegistro}) {
             <div style={{display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",borderRight:"1px solid #e0e0e0"}}><span onClick={()=>moveRow(idx,-1)} style={{cursor:"pointer",fontSize:"8px"}}>▲</span><span onClick={()=>moveRow(idx,1)} style={{cursor:"pointer",fontSize:"8px"}}>▼</span></div>
             <div style={{display:"flex",alignItems:"center",justifyContent:"center",borderRight:"1px solid #e0e0e0",color:"#800000",fontWeight:"bold"}}>{idx+1}</div>
             <div style={{display:"flex",alignItems:"center",justifyContent:"center",borderRight:"1px solid #e0e0e0"}}><span onClick={()=>setExpRow(isExp?null:idx)} style={{cursor:"pointer",fontSize:"11px",fontWeight:"bold",color:"#000080",transform:isExp?"rotate(90deg)":"none",display:"inline-block",transition:"transform 0.15s"}}>▶</span></div>
-            <div style={{borderRight:"1px solid #e0e0e0",padding:"1px"}}><input type="text" value={row.titulo||""} onChange={e=>updRow(idx,"titulo",e.target.value)} style={{width:"100%",border:"none",fontSize:"10px",fontFamily:F,background:"transparent",padding:"2px"}} placeholder="Título..."/></div>
-            <div style={{borderRight:"1px solid #e0e0e0",padding:"1px"}}><input type="text" value={row.item||""} onChange={e=>updRow(idx,"item",e.target.value)} style={{width:"100%",border:"none",fontSize:"10px",fontFamily:F,background:"transparent",padding:"2px"}} placeholder="Item..."/></div>
-            <div style={{borderRight:"1px solid #e0e0e0",padding:"1px"}}><input type="text" value={row.subitem||""} onChange={e=>updRow(idx,"subitem",e.target.value)} style={{width:"100%",border:"none",fontSize:"9px",fontFamily:F,background:"transparent",padding:"2px"}} placeholder="SubItem..."/></div>
+            <div style={{borderRight:"1px solid #e0e0e0",padding:"1px"}}><input type="text" value={row.titulo||""} onChange={e=>updRow(idx,"titulo",e.target.value)} style={{width:"100%",border:"none",fontSize:"10px",fontFamily:F,background:"transparent",padding:"2px",color:"#000"}} placeholder="Título..."/></div>
+            <div style={{borderRight:"1px solid #e0e0e0",padding:"1px"}}><input type="text" value={row.item||""} onChange={e=>updRow(idx,"item",e.target.value)} style={{width:"100%",border:"none",fontSize:"10px",fontFamily:F,background:"transparent",padding:"2px",color:"#000"}} placeholder="Item..."/></div>
+            <div style={{borderRight:"1px solid #e0e0e0",padding:"1px"}}><input type="text" value={row.subitem||""} onChange={e=>updRow(idx,"subitem",e.target.value)} style={{width:"100%",border:"none",fontSize:"9px",fontFamily:F,background:"transparent",padding:"2px",color:"#000"}} placeholder="SubItem..."/></div>
             <div style={{borderRight:"1px solid #e0e0e0",padding:"1px 2px",display:"flex",alignItems:"center"}}><select value={row.tipoDato} onChange={e=>{updRow(idx,"tipoDato",e.target.value);setExpRow(idx);}} style={{width:"100%",fontSize:"9px",fontFamily:F,border:"1px solid #999",padding:"1px"}}>{TIPOS_DATO.map(t=><option key={t.code} value={t.code}>{t.code} - {t.label}</option>)}</select></div>
             <div style={{display:"flex",alignItems:"center",justifyContent:"center"}}><input type="checkbox" checked={row.obligatorio} onChange={e=>updRow(idx,"obligatorio",e.target.checked)}/></div>
           </div>
@@ -218,7 +219,9 @@ function RegistroEditor({registro,setRegistro}) {
 // No editor UI, no modern buttons, pure VFP look
 // ============================================================
 
-function SisghRegistroView({registro, sheetUrl, onBack}) {
+function SisghRegistroView({registro, sheetUrl, onBack, colWidths}) {
+  const cw = colWidths || {titulo:140,item:180,subitem:0,resultado:160};
+  const gridCols = `${cw.titulo}px ${cw.item}px 1fr 22px 22px ${cw.resultado}px`;
   const [commentMode, setCommentMode] = useState(false);
   const [comments, setComments] = useState({});
   const [popup, setPopup] = useState(null);
@@ -268,20 +271,20 @@ function SisghRegistroView({registro, sheetUrl, onBack}) {
     const tipo = TIPOS_DATO.find(t=>t.code===row.tipoDato);
     if (!tipo) return null;
     if (tipo.group==="buleano") return <div style={{display:"flex",gap:"4px",alignItems:"center",fontSize:"10px",fontFamily:F}}>
-      <label style={{display:"flex",alignItems:"center",gap:"2px"}}><input type="radio" disabled/>{row.positivo||"Normal"}</label>
-      <label style={{display:"flex",alignItems:"center",gap:"2px"}}><input type="radio" disabled/>{row.negativo||"Patológico"}</label>
+      <label style={{display:"flex",alignItems:"center",gap:"2px",cursor:"pointer"}}><input type="radio" name={`bool_${row.id}`}/>{row.positivo||"Normal"}</label>
+      <label style={{display:"flex",alignItems:"center",gap:"2px",cursor:"pointer"}}><input type="radio" name={`bool_${row.id}`}/>{row.negativo||"Patológico"}</label>
     </div>;
     if (tipo.group==="combo") {
       const opts=(row.opciones||[]).filter(o=>o&&o.trim());
-      return opts.length ? <select disabled style={{fontFamily:F,fontSize:"10px",border:"1px inset #808080",width:"100%",background:"#fff"}}><option>Seleccionar...</option>{opts.map((o,i)=><option key={i}>{o}</option>)}</select>
+      return opts.length ? <select style={{fontFamily:F,fontSize:"10px",border:"1px inset #808080",width:"100%",background:"#fff"}}><option>Seleccionar...</option>{opts.map((o,i)=><option key={i}>{o}</option>)}</select>
         : null;
     }
-    if (tipo.group==="texto") return <div style={{border:"1px inset #808080",background:"#fff",padding:"1px 3px",minHeight:"16px",color:"#aaa",fontSize:"9px",fontFamily:F}}>{row.plantilla||""}</div>;
+    if (tipo.group==="texto") return <input type="text" defaultValue={row.plantilla||""} style={{border:"1px inset #808080",background:"#fff",padding:"1px 3px",width:"100%",minHeight:"16px",color:"#000",fontSize:"9px",fontFamily:F}} placeholder="Ingrese texto..."/>;
     if (tipo.group==="numerico") return <div style={{display:"flex",gap:"3px",alignItems:"center",fontSize:"10px",fontFamily:F}}>
-      <div style={{border:"1px inset #808080",background:"#fff",padding:"1px 3px",width:"50px",textAlign:"right",color:"#aaa"}}>0{row.decimales?".00":""}</div>
+      <input type="text" defaultValue="" style={{border:"1px inset #808080",background:"#fff",padding:"1px 3px",width:"50px",textAlign:"right",color:"#000",fontSize:"10px",fontFamily:F}} placeholder={`0${row.decimales?".00":""}`}/>
       {row.unidad&&<span style={{fontSize:"9px",color:"#555"}}>{row.unidad}</span>}
     </div>;
-    return null; // Simple types show nothing in resultado, just like real SISGH
+    return <input type="text" defaultValue="" style={{border:"1px inset #808080",background:"#fff",padding:"1px 3px",width:"100%",minHeight:"16px",color:"#000",fontSize:"9px",fontFamily:F}} placeholder=""/>;
   };
 
   // Commentable cell
@@ -361,7 +364,7 @@ function SisghRegistroView({registro, sheetUrl, onBack}) {
         {/* === DATA GRID === */}
         <div style={{border:"2px inset #808080",background:"#fff"}}>
           {/* Grid header */}
-          <div style={{display:"grid",gridTemplateColumns:"140px 180px 1fr 22px 22px 160px",background:"#0000a8",color:"#fff",fontWeight:"bold",fontSize:"10px"}}>
+          <div style={{display:"grid",gridTemplateColumns:gridCols,background:"#0000a8",color:"#fff",fontWeight:"bold",fontSize:"10px"}}>
             {["Título","Item","SubItem","P","R","Resultado"].map(h=><div key={h} style={{padding:"3px 4px",borderRight:"1px solid #4040c0",textAlign:"center",whiteSpace:"nowrap"}}>{h}</div>)}
           </div>
 
@@ -369,7 +372,7 @@ function SisghRegistroView({registro, sheetUrl, onBack}) {
           <div style={{minHeight:"200px"}}>
             {registro.rows.map((row,idx) => {
               const fp = `${row.titulo||"Fila "+(idx+1)}`;
-              return <div key={row.id} style={{display:"grid",gridTemplateColumns:"140px 180px 1fr 22px 22px 160px",borderBottom:"1px solid #c0c0c0",minHeight:"24px"}}>
+              return <div key={row.id} style={{display:"grid",gridTemplateColumns:gridCols,borderBottom:"1px solid #c0c0c0",minHeight:"24px"}}>
                 <C field={`${fp} > Título`} style={{padding:"2px 4px",borderRight:"1px solid #e0e0e0",background:"#ffff80",fontWeight:"bold",fontSize:"10px"}}>
                   {row.titulo||""}
                 </C>
@@ -392,7 +395,7 @@ function SisghRegistroView({registro, sheetUrl, onBack}) {
             })}
             {/* Empty padding rows */}
             {Array.from({length:Math.max(0,6-registro.rows.length)}).map((_,i)=>
-              <div key={`pad${i}`} style={{display:"grid",gridTemplateColumns:"140px 180px 1fr 22px 22px 160px",height:"24px"}}>
+              <div key={`pad${i}`} style={{display:"grid",gridTemplateColumns:gridCols,height:"24px"}}>
                 {[0,1,2,3,4,5].map(j=><div key={j} style={{borderRight:j<5?"1px solid #e8e8e8":"none"}}/>)}
               </div>
             )}
@@ -531,6 +534,7 @@ export default function App() {
   const [selectedRegIdx, setSelectedRegIdx] = useState(0);
   const [publishing, setPublishing] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState("");
+  const [showColConfig, setShowColConfig] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -647,14 +651,12 @@ export default function App() {
   // === VIEWER (user) ===
   if (mode === "viewer_hce") return <SisghHCEPortal project={project} onSelectRegistro={idx=>{setSelectedRegIdx(idx);setMode("viewer_registro");}}/>;
   if (mode === "viewer_registro") return <SisghRegistroView registro={project.registros[selectedRegIdx]} sheetUrl={project.sheetUrl}
-    onBack={project.registros.length>1?()=>setMode("viewer_hce"):null}/>;
+    colWidths={project.colWidths} onBack={project.registros.length>1?()=>setMode("viewer_hce"):null}/>;
 
   // === EDITOR PREVIEW ===
   if (mode === "preview_hce") return <SisghHCEPortal project={project} onSelectRegistro={idx=>{setSelectedRegIdx(idx);setMode("preview_registro");}}/>;
-  if (mode === "preview_registro") return <div>
-    <div style={{padding:"4px",background:"#c0c0c0"}}><VBtn onClick={()=>setMode(project.registros.length>1?"preview_hce":"editor")} small>← Volver</VBtn></div>
-    <SisghRegistroView registro={project.registros[selectedRegIdx]} sheetUrl={project.sheetUrl} onBack={()=>setMode(project.registros.length>1?"preview_hce":"editor")}/>
-  </div>;
+  if (mode === "preview_registro") return <SisghRegistroView registro={project.registros[selectedRegIdx]} sheetUrl={project.sheetUrl}
+    colWidths={project.colWidths} onBack={()=>setMode(project.registros.length>1?"preview_hce":"editor")}/>;
 
   // === EDITOR ===
   return <div style={{fontFamily:F,fontSize:"11px",background:"#c0c0c0",minHeight:"100vh",padding:"6px"}}>
@@ -684,6 +686,23 @@ export default function App() {
       <div style={{padding:"6px 8px",display:"flex",gap:"8px",alignItems:"center"}}>
         <VInp value={project.sheetUrl} onChange={e=>setProject(p=>({...p,sheetUrl:e.target.value}))} placeholder="https://script.google.com/macros/s/XXXX/exec" style={{flex:1}}/>
       </div>
+    </div>
+
+    <div style={{border:"2px outset #dfdfdf",background:"#c0c0c0",marginBottom:"6px"}}>
+      <div style={{background:"#444",color:"#fff",fontWeight:"bold",padding:"3px 6px",fontSize:"10px",cursor:"pointer",display:"flex",justifyContent:"space-between"}}
+        onClick={()=>setShowColConfig(!showColConfig)}>
+        <span>📐 Anchos de Columna (Preview/Usuario)</span><span style={{fontSize:"9px"}}>{showColConfig?"▼":"▶"}</span>
+      </div>
+      {showColConfig&&<div style={{padding:"6px 8px",display:"flex",gap:"12px",alignItems:"center",flexWrap:"wrap",fontSize:"10px",fontFamily:F}}>
+        {[["titulo","Título"],["item","Item"],["resultado","Resultado"]].map(([k,label])=>
+          <div key={k} style={{display:"flex",alignItems:"center",gap:"4px"}}>
+            <b>{label}:</b>
+            <input type="number" value={project.colWidths?.[k]||0} onChange={e=>setProject(p=>({...p,colWidths:{...p.colWidths,[k]:parseInt(e.target.value)||0}}))}
+              style={{width:"55px",fontFamily:F,fontSize:"10px",border:"2px inset #808080",padding:"1px 3px",textAlign:"right"}} min="60" max="500"/>
+            <span style={{color:"#666"}}>px</span>
+          </div>)}
+        <span style={{fontSize:"9px",color:"#666"}}>(SubItem se ajusta automáticamente)</span>
+      </div>}
     </div>
 
     <div style={{border:"2px outset #dfdfdf",background:"#c0c0c0"}}>
