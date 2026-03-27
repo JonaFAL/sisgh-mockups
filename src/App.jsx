@@ -41,10 +41,18 @@ const emptyRow = () => ({
 const defaultRegistro = () => ({
   id:"reg"+Date.now()+Math.floor(Math.random()*99999),
   estudio:"",titulo:"",especialidad:"INFECTOLOGIA",
-  categoria:"Informe Médico",rows:[emptyRow()],
+  categoria:"Informe Médico",activo:true,rows:[emptyRow()],
 });
+const AISLAMIENTOS = [
+  "AISLAMIENTO - RESPIRATORIO AÉREO",
+  "AISLAMIENTO - RESPIRATORIO GOTA",
+  "AISLAMIENTO - DE CONTACTO",
+  "AISLAMIENTO - POR CD",
+  "AISLAMIENTO - NEUTROPÉNICOS",
+  "AISLAMIENTO - ENTOMOLÓGICO",
+];
 const defaultProject = () => ({
-  registros:[defaultRegistro()],
+  registros:AISLAMIENTOS.map(name => ({...defaultRegistro(), estudio:name, activo:true})),
   sheetUrl:"",
   colWidths:{titulo:140,item:180,subitem:300,resultado:160},
 });
@@ -588,8 +596,10 @@ export default function App() {
         return;
       }
       if (data.status === "ok" && data.project) {
-        setProject({...defaultProject(), ...data.project, sheetUrl});
-        if (data.project.registros && data.project.registros.length === 1) {
+        const loaded = {...defaultProject(), ...data.project, sheetUrl};
+        setProject(loaded);
+        const activos = (loaded.registros||[]).filter(r=>r.activo!==false);
+        if (activos.length <= 1) {
           setSelectedRegIdx(0);
           setMode("viewer_registro");
         } else {
@@ -677,9 +687,10 @@ export default function App() {
   </div>;
 
   // === VIEWER (user) ===
-  if (mode === "viewer_hce") return <SisghHCEPortal project={project} onSelectRegistro={idx=>{setSelectedRegIdx(idx);setMode("viewer_registro");}}/>;
-  if (mode === "viewer_registro") return <SisghRegistroView registro={project.registros[selectedRegIdx]} sheetUrl={project.sheetUrl}
-    colWidths={project.colWidths} onBack={project.registros.length>1?()=>setMode("viewer_hce"):null}/>;
+  const activeRegs = project.registros.filter(r=>r.activo!==false);
+  if (mode === "viewer_hce") return <SisghHCEPortal project={{...project,registros:activeRegs}} onSelectRegistro={idx=>{setSelectedRegIdx(idx);setMode("viewer_registro");}}/>;
+  if (mode === "viewer_registro") return <SisghRegistroView registro={activeRegs[selectedRegIdx]} sheetUrl={project.sheetUrl}
+    colWidths={project.colWidths} onBack={activeRegs.length>1?()=>setMode("viewer_hce"):null}/>;
 
   // === EDITOR PREVIEW ===
   if (mode === "preview_hce") return <SisghHCEPortal project={project} onSelectRegistro={idx=>{setSelectedRegIdx(idx);setMode("preview_registro");}}/>;
@@ -724,8 +735,9 @@ export default function App() {
       </div>
       <div style={{padding:"4px 8px"}}>
         <div style={{display:"flex",gap:"2px",marginBottom:"6px",flexWrap:"wrap"}}>
-          {project.registros.map((reg,i)=><div key={reg.id||i} style={{display:"flex",alignItems:"center"}}>
-            <VBtn active={activeRegIdx===i} onClick={()=>setActiveRegIdx(i)} small>{reg.estudio||`Reg ${i+1}`}</VBtn>
+          {project.registros.map((reg,i)=><div key={reg.id||i} style={{display:"flex",alignItems:"center",opacity:reg.activo===false?0.5:1}}>
+            <input type="checkbox" checked={reg.activo!==false} onChange={e=>updRegistro(i,{...reg,activo:e.target.checked})} title="Visible para el usuario" style={{margin:"0 2px 0 0"}}/>
+            <VBtn active={activeRegIdx===i} onClick={()=>setActiveRegIdx(i)} small style={{textDecoration:reg.activo===false?"line-through":"none"}}>{reg.estudio||`Reg ${i+1}`}</VBtn>
             {project.registros.length>1&&<span onClick={()=>{if(window.confirm("¿Eliminar?"))removeRegistro(i);}} style={{cursor:"pointer",fontSize:"9px",color:"#800000",padding:"0 3px"}}>✕</span>}
           </div>)}
         </div>
