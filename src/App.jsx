@@ -612,7 +612,7 @@ export default function App() {
     if (verId) {
       loadProject(sheetParam, verId);
     } else {
-      setMode("editor");
+      setMode("login");
     }
   }, []);
 
@@ -697,6 +697,16 @@ export default function App() {
   const importProject = () => {const input=document.createElement("input");input.type="file";input.accept=".json";input.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.registros){setProject({...defaultProject(),...d});alert("✅ OK");}else alert("❌ Formato inválido");}catch{alert("❌ Error");}};r.readAsText(f);};input.click();};
 
   // === LOADING ===
+  if (mode === "login") return <div style={{fontFamily:F,background:"#c0c0c0",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center"}}>
+    <div style={{border:"2px outset #dfdfdf",background:"#c0c0c0",padding:"40px",textAlign:"center"}}>
+      <div style={{fontSize:"14px",fontWeight:"bold",color:"#000080",marginBottom:"16px"}}>SISGH Mockup Builder</div>
+      <form onSubmit={e=>{e.preventDefault();const v=e.target.elements.pw.value;if(v==="maquetado"){setMode("editor");}else{alert("Clave incorrecta");}}}>
+        <input name="pw" type="password" placeholder="Clave de acceso" style={{fontFamily:F,fontSize:"12px",padding:"4px 8px",border:"2px inset #808080",marginBottom:"8px",width:"180px"}}/>
+        <br/><VBtn type="submit">Ingresar</VBtn>
+      </form>
+    </div>
+  </div>;
+
   if (mode === "loading") return <div style={{fontFamily:F,background:"#c0c0c0",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center"}}>
     <div style={{border:"2px outset #dfdfdf",background:"#c0c0c0",padding:"40px",textAlign:"center"}}>
       <div style={{fontSize:"14px",fontWeight:"bold",color:"#000080"}}>⏳ Cargando...</div>
