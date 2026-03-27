@@ -56,6 +56,7 @@ const AISLAMIENTOS = [
   "AISLAMIENTO - ENTOMOLÓGICO",
 ];
 const defaultProject = () => ({
+  projectId: "p" + Date.now(),
   registros:AISLAMIENTOS.map(name => ({...defaultRegistro(), estudio:name, activo:true})),
   sheetUrl:"",
   colWidths:{titulo:140,item:180,subitem:300,resultado:160},
@@ -407,16 +408,16 @@ function SisghRegistroView({registro, sheetUrl, onBack, colWidths, onColWidthsCh
         </div>
 
         {/* Firma */}
-        <div style={{fontWeight:"bold",fontSize:"10px",marginBottom:"4px"}}>
+        <div style={{fontWeight:"bold",fontSize:"11px",marginBottom:"4px"}}>
           Firma / Validación <span style={{display:"inline-block",width:"200px",borderBottom:"1px solid #000",marginLeft:"4px",verticalAlign:"middle"}}/>
         </div>
 
         {/* === DATA GRID === */}
         <div style={{border:"2px inset #808080",background:"#fff"}}>
           {/* Grid header */}
-          <div style={{display:"grid",gridTemplateColumns:gridCols,background:"#0000a8",color:"#fff",fontWeight:"bold",fontSize:"10px",userSelect:"none"}}>
+          <div style={{display:"grid",gridTemplateColumns:gridCols,background:"#0000a8",color:"#fff",fontWeight:"bold",fontSize:"12px",userSelect:"none"}}>
             {[{label:"Título",key:"titulo"},{label:"Item",key:"item"},{label:"SubItem",key:"subitem"},{label:"P",key:null},{label:"R",key:null},{label:"Resultado",key:"resultado"}].map((h,i)=>
-              <div key={i} style={{padding:"3px 4px",borderRight:"1px solid #4040c0",textAlign:"center",whiteSpace:"nowrap",position:"relative"}}>
+              <div key={i} style={{padding:"4px 6px",borderRight:"1px solid #4040c0",textAlign:"center",whiteSpace:"nowrap",position:"relative"}}>
                 {h.label}
                 {h.key && <div onMouseDown={e=>startResize(h.key,e)}
                   onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,0.4)";}}
@@ -431,13 +432,13 @@ function SisghRegistroView({registro, sheetUrl, onBack, colWidths, onColWidthsCh
             {registro.rows.map((row,idx) => {
               const fp = `${row.titulo||"Fila "+(idx+1)}`;
               return <div key={row.id} style={{display:"grid",gridTemplateColumns:gridCols,borderBottom:"1px solid #c0c0c0",minHeight:"24px"}}>
-                <C field={`${fp} > Título`} style={{padding:"2px 4px",borderRight:"1px solid #e0e0e0",background:"#ffff80",fontWeight:"bold",fontSize:"10px"}}>
+                <C field={`${fp} > Título`} style={{padding:"3px 6px",borderRight:"1px solid #e0e0e0",background:"#ffff80",fontWeight:"bold",fontSize:"12px"}}>
                   {row.titulo||""}
                 </C>
-                <C field={`${fp} > Item`} style={{padding:"2px 4px",borderRight:"1px solid #e0e0e0",background:"#ffff80",fontSize:"10px"}}>
+                <C field={`${fp} > Item`} style={{padding:"3px 6px",borderRight:"1px solid #e0e0e0",background:"#ffff80",fontSize:"12px"}}>
                   {row.item||""}
                 </C>
-                <C field={`${fp} > SubItem`} style={{padding:"2px 4px",borderRight:"1px solid #e0e0e0",background:"#ffff80",fontSize:"9px",lineHeight:1.3,wordWrap:"break-word",overflow:"hidden"}}>
+                <C field={`${fp} > SubItem`} style={{padding:"3px 6px",borderRight:"1px solid #e0e0e0",background:"#ffff80",fontSize:"11px",lineHeight:1.3,wordWrap:"break-word",overflow:"hidden"}}>
                   {row.subitem||""}
                 </C>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"center",borderRight:"1px solid #e0e0e0",background:"#ffff80"}}>
@@ -451,8 +452,8 @@ function SisghRegistroView({registro, sheetUrl, onBack, colWidths, onColWidthsCh
                 </C>
               </div>;
             })}
-            {/* Empty padding rows */}
-            {Array.from({length:Math.max(0,6-registro.rows.length)}).map((_,i)=>
+            {/* Empty padding rows - only if less than 2 rows */}
+            {Array.from({length:Math.max(0,2-registro.rows.length)}).map((_,i)=>
               <div key={`pad${i}`} style={{display:"grid",gridTemplateColumns:gridCols,height:"24px"}}>
                 {[0,1,2,3,4,5].map(j=><div key={j} style={{borderRight:j<5?"1px solid #e8e8e8":"none"}}/>)}
               </div>
@@ -461,7 +462,7 @@ function SisghRegistroView({registro, sheetUrl, onBack, colWidths, onColWidthsCh
         </div>
 
         {/* Status bar */}
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"3px 4px",marginTop:"4px",border:"2px inset #808080",fontSize:"9px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 6px",marginTop:"4px",border:"2px inset #808080",fontSize:"10px"}}>
           <div style={{display:"flex",gap:"8px"}}>
             {[["#00a000","Obligatorio"],["#c0c000","Incompleto"],["#ff0000","Fuera de Rango Crítico"],["#808080","Por Defecto"],["#0000ff","Fórmula"],["#fff","Trae Ultimo Valor"]].map(([c,l])=>
               <span key={l} style={{display:"flex",alignItems:"center",gap:"2px"}}><span style={{width:"8px",height:"8px",borderRadius:"50%",background:c,display:"inline-block",border:c==="#fff"?"1px solid #808080":"none"}}/>{l}</span>
@@ -629,6 +630,12 @@ export default function App() {
         return;
       }
       if (data.status === "ok" && data.project) {
+        // Validate version - if URL has &v= param, check it matches
+        const urlV = new URLSearchParams(window.location.search).get("v");
+        if (urlV && data.project.publishedVersion && String(data.project.publishedVersion) !== urlV) {
+          setMode("expired");
+          return;
+        }
         const loaded = {...defaultProject(), ...data.project, sheetUrl};
         setProject(loaded);
         const activos = (loaded.registros||[]).filter(r=>r.activo!==false);
@@ -653,12 +660,16 @@ export default function App() {
     if (!project.sheetUrl) {alert("⚠️ Pegá la URL del Google Sheet primero."); return;}
     if (!project.registros.length) {alert("⚠️ Armá al menos un registro."); return;}
     setPublishing(true);
-    const projectId = "p" + Date.now();
+    // Use stable ID so republishing overwrites the old version (old links stop working)
+    const projectId = project.projectId || ("p" + Date.now());
+    setProject(p=>({...p, projectId}));
     try {
+      const version = Date.now();
+      const projectWithVer = {...project, projectId, publishedVersion: version};
       const payload = JSON.stringify({
         action:"save_project", projectId,
         paciente: project.registros.map(r=>r.estudio).join(", "),
-        project,
+        project: projectWithVer,
       });
       // Apps Script POST: use text/plain to avoid CORS preflight
       const resp = await fetch(project.sheetUrl, {
@@ -670,7 +681,7 @@ export default function App() {
       const text = await resp.text();
       let result;
       try { result = JSON.parse(text); } catch { result = null; }
-      setPublishedUrl(`${BASE_URL}/?ver=${projectId}`);
+      setPublishedUrl(`${BASE_URL}/?ver=${projectId}&v=${version}`);
       if (!result || result.status !== "ok") console.warn("Publish response:", text);
     } catch (err) {
       try {
@@ -679,11 +690,11 @@ export default function App() {
           body: JSON.stringify({
             action:"save_project", projectId,
             paciente: project.registros.map(r=>r.estudio).join(", "),
-            project,
+            project: projectWithVer,
           }),
           mode:"no-cors",
         });
-        setPublishedUrl(`${BASE_URL}/?ver=${projectId}`);
+        setPublishedUrl(`${BASE_URL}/?ver=${projectId}&v=${version}`);
       } catch { alert("❌ Error al publicar."); }
     }
     setPublishing(false);
@@ -697,6 +708,13 @@ export default function App() {
   const importProject = () => {const input=document.createElement("input");input.type="file";input.accept=".json";input.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(d.registros){setProject({...defaultProject(),...d});alert("✅ OK");}else alert("❌ Formato inválido");}catch{alert("❌ Error");}};r.readAsText(f);};input.click();};
 
   // === LOADING ===
+  if (mode === "expired") return <div style={{fontFamily:F,background:"#c0c0c0",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center"}}>
+    <div style={{border:"2px outset #dfdfdf",background:"#c0c0c0",padding:"40px",textAlign:"center",maxWidth:"400px"}}>
+      <div style={{fontSize:"16px",fontWeight:"bold",color:"#800000",marginBottom:"12px"}}>⚠️ Link vencido</div>
+      <div style={{fontSize:"12px",color:"#000",lineHeight:1.5}}>Este link ya no es válido.<br/>Solicite al administrador el link actualizado.</div>
+    </div>
+  </div>;
+
   if (mode === "login") return <div style={{fontFamily:F,background:"#c0c0c0",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center"}}>
     <div style={{border:"2px outset #dfdfdf",background:"#c0c0c0",padding:"40px",textAlign:"center"}}>
       <div style={{fontSize:"14px",fontWeight:"bold",color:"#000080",marginBottom:"16px"}}>SISGH Mockup Builder</div>
