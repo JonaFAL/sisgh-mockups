@@ -499,8 +499,9 @@ function SisghRegistroView({registro, sheetUrl, onBack, colWidths, onColWidthsCh
 }
 
 // HCE Portal for user
-function SisghHCEPortal({project, onSelectRegistro}) {
+function SisghHCEPortal({project, onSelectRegistro, onBack}) {
   return <div style={{fontFamily:F,fontSize:"11px",background:"#c0c0c0",minHeight:"100vh",padding:"2px"}}>
+    {onBack && <div style={{marginBottom:"4px"}}><VBtn onClick={onBack}>← Volver al Editor</VBtn></div>}
     <div style={{border:"2px outset #dfdfdf",background:"#c0c0c0"}}>
       <div style={{background:"linear-gradient(90deg,#000080,#1084d0)",color:"#fff",fontWeight:"bold",fontSize:"11px",padding:"3px 6px"}}>
         HCE - Historia Clínica Electrónica
@@ -703,7 +704,7 @@ export default function App() {
     colWidths={project.colWidths} onBack={activeRegs.length>1?()=>setMode("viewer_hce"):null}/>;
 
   // === EDITOR PREVIEW ===
-  if (mode === "preview_hce") return <SisghHCEPortal project={project} onSelectRegistro={idx=>{setSelectedRegIdx(idx);setMode("preview_registro");}}/>;
+  if (mode === "preview_hce") return <SisghHCEPortal project={project} onBack={()=>setMode("editor")} onSelectRegistro={idx=>{setSelectedRegIdx(idx);setMode("preview_registro");}}/>;
   if (mode === "preview_registro") return <SisghRegistroView registro={project.registros[selectedRegIdx]} sheetUrl={project.sheetUrl}
     colWidths={project.colWidths} onColWidthsChange={cw=>setProject(p=>({...p,colWidths:cw}))}
     onBack={()=>setMode(project.registros.length>1?"preview_hce":"editor")}/>;
