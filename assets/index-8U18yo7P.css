@@ -1,0 +1,1 @@
+:root{--lightningcss-light:initial;--lightningcss-dark: ;color-scheme:light only}*{box-sizing:border-box}body{color:#000;background:silver;margin:0;padding:0}#root{color:#000;min-height:100vh}input,select,textarea,button{--lightningcss-light:initial;--lightningcss-dark: ;color-scheme:light;color:#000!important}input::placeholder{color:#999!important}
